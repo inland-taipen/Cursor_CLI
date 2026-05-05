@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+import 'dotenv/config';
 import { createInterface } from 'readline';
 import Groq from 'groq-sdk';
 import axios from 'axios';
@@ -15,7 +15,7 @@ const OUTPUT_DIR = './scaler-clone';
 await fs.ensureDir(OUTPUT_DIR);
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = 'llama3-70b-8192'; // or 'mixtral-8x7b-32768'
+const MODEL = 'llama-3.3-70b-versatile'; // or 'mixtral-8x7b-32768'
 
 // ------------------------------
 // Tool Implementations
@@ -185,26 +185,23 @@ const TOOL_FUNCTIONS = {
 // ------------------------------
 // System Prompt
 // ------------------------------
-const SYSTEM_PROMPT = `You are ScalerCloneAgent, a CLI AI that clones the Scaler Academy website.
+const SYSTEM_PROMPT = `You are ScalerCloneAgent, an elite autonomous AI capable of crafting high-fidelity, production-grade website replicas. Your objective is to clone the Scaler Academy website with premium quality, responsive design, and modern aesthetics.
 
-Workflow:
-1. First call fetchWebpage('https://www.scaler.com/')
-2. Then call extractDesignTokens with the fetched HTML.
-3. Based on the tokens, create three files using writeFile:
-   - index.html (header, hero, footer, at least 5 links)
-   - styles.css (responsive, color variables from tokens)
-   - scripts.js (hamburger toggle, smooth scroll, header shadow)
-4. After writing all files, call openInBrowser('index.html').
+CRITICAL WORKFLOW (Strictly Sequential):
+1. RESEARCH & FETCH: Use fetchWebpage('https://www.scaler.com/') to gather raw HTML.
+2. EXTRACT DESIGN: Use extractDesignTokens with the fetched HTML to retrieve authentic fonts, colors, navigation items, and brand text.
+3. BUILD CSS (Iterative): Write 'styles.css' using writeFile. Use CSS variables for colors and fonts extracted from tokens. Ensure the design is premium: use modern reset, responsive flexbox/grid layouts, smooth hover animations, and aesthetic spacing. DO NOT use placeholder colors; use the authentic Scaler palette.
+4. BUILD HTML (Iterative): Write 'index.html' using writeFile. It must link 'styles.css' and 'scripts.js'. Include a header with navigation, a hero section with a compelling call-to-action, and a footer. Inject Google Fonts dynamically based on extracted tokens. NO PLACEHOLDER TEXT allowed.
+5. BUILD JS (Iterative): Write 'scripts.js' using writeFile. Add interactivity (e.g., sticky header on scroll, mobile hamburger menu toggle, smooth scrolling).
+6. VERIFY & DEPLOY: Call openInBrowser('index.html') only when ALL files are successfully written.
 
-Design rules:
-- Use exact brand colors from extracted tokens (dark blue/purple gradients).
-- Use real Scaler content: "Scaler" logo, nav items like "Explore Programs", "Login", "For Enterprise".
-- Hero section should have a bold headline and a CTA button.
-- Fonts should come from fontUrls (add Google Fonts link in HTML head).
-- All text must come from extracted tokens, no placeholder "Link 1" etc.
-- Write one file per response to avoid output length issues.
+DESIGN & QUALITY STANDARDS:
+- Premium Aesthetics: The UI must look like a high-end tech education platform. Use modern styling (subtle shadows, gradients, rounded corners).
+- No Hardcoding: All copy, headings, and styling variables must be derived from the extracted tokens.
+- Strict Iteration: Write ONE file per response to avoid output truncation. Wait for the tool result before proceeding to the next file.
+- Robust Code: Ensure semantic HTML5 tags and clean, maintainable CSS.
 
-You must work iteratively – do not generate all files in a single turn. Use the tools in sequence.`;
+Execute your tasks methodically. If a tool fails, adjust your strategy. Ensure the final output reflects the expertise of a senior frontend engineer.`;
 
 // ------------------------------
 // Conversational Agent
@@ -294,4 +291,4 @@ async function runAgent() {
   console.log(chalk.gray('\nGoodbye!'));
 }
 
-runAgent().catch(console.error);
+export { runAgent };
