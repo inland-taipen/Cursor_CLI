@@ -20,14 +20,19 @@ const MODEL = 'llama-3.3-70b-versatile'; // or 'mixtral-8x7b-32768'
 // ------------------------------
 // Tool Implementations
 // ------------------------------
+import puppeteer from 'puppeteer';
+
 async function fetchWebpage(url) {
+  let browser;
   try {
-    const response = await axios.get(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 15000,
-    });
-    return response.data;
+    browser = await puppeteer.launch({ headless: 'new' });
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+    const html = await page.content();
+    await browser.close();
+    return html;
   } catch (err) {
+    if (browser) await browser.close();
     return `Error fetching ${url}: ${err.message}`;
   }
 }
