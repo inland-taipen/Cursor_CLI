@@ -22,6 +22,8 @@ const MODEL = 'llama-3.3-70b-versatile'; // or 'mixtral-8x7b-32768'
 // ------------------------------
 import puppeteer from 'puppeteer';
 
+let _cachedHtml = '';
+
 async function fetchWebpage(url) {
   let browser;
   try {
@@ -30,15 +32,17 @@ async function fetchWebpage(url) {
     await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
     const html = await page.content();
     await browser.close();
-    return html;
+    _cachedHtml = html;
+    return `Successfully fetched HTML from ${url} (${html.length} bytes) and cached it internally. Next, call extractDesignTokens() (no arguments needed).`;
   } catch (err) {
     if (browser) await browser.close();
     return `Error fetching ${url}: ${err.message}`;
   }
 }
 
-function extractDesignTokens(html) {
-  const $ = cheerio.load(html);
+function extractDesignTokens() {
+  if (!_cachedHtml) return "Error: No HTML cached. Call fetchWebpage first.";
+  const $ = cheerio.load(_cachedHtml);
   
   // Colors from inline styles
   const colors = new Set();
@@ -129,11 +133,11 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'extractDesignTokens',
-      description: 'Extract colors, fonts, nav items, headings, buttons, footer text from HTML',
+      description: 'Extract colors, fonts, nav items, headings, buttons, footer text from the cached HTML',
       parameters: {
         type: 'object',
-        properties: { html: { type: 'string', description: 'HTML source' } },
-        required: ['html'],
+        properties: {},
+        required: [],
       },
     },
   },
@@ -193,8 +197,8 @@ const TOOL_FUNCTIONS = {
 const SYSTEM_PROMPT = `You are ScalerCloneAgent, an elite autonomous AI capable of crafting high-fidelity, production-grade website replicas. Your objective is to clone the Scaler Academy website with premium quality, responsive design, and modern aesthetics.
 
 CRITICAL WORKFLOW (Strictly Sequential):
-1. RESEARCH & FETCH: Use fetchWebpage('https://www.scaler.com/') to gather raw HTML.
-2. EXTRACT DESIGN: Use extractDesignTokens with the fetched HTML to retrieve authentic fonts, colors, navigation items, and brand text.
+1. RESEARCH & FETCH: Use fetchWebpage('https://www.scaler.com/') to gather and cache raw HTML.
+2. EXTRACT DESIGN: Use extractDesignTokens() to retrieve authentic fonts, colors, navigation items, and brand text from the cache.
 3. BUILD CSS (Iterative): Write 'styles.css' using writeFile. Use CSS variables for colors and fonts extracted from tokens. Ensure the design is premium: use modern reset, responsive flexbox/grid layouts, smooth hover animations, and aesthetic spacing. DO NOT use placeholder colors; use the authentic Scaler palette.
 4. BUILD HTML (Iterative): Write 'index.html' using writeFile. It must link 'styles.css' and 'scripts.js'. Include a header with navigation, a hero section with a compelling call-to-action, and a footer. Inject Google Fonts dynamically based on extracted tokens. NO PLACEHOLDER TEXT allowed.
 5. BUILD JS (Iterative): Write 'scripts.js' using writeFile. Add interactivity (e.g., sticky header on scroll, mobile hamburger menu toggle, smooth scrolling).

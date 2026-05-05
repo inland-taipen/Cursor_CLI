@@ -69,20 +69,41 @@ Push to messages[]
                        continue loop
 ```
 
-### Clone Workflow (4 Rounds)
+### The Perfect System Prompt
 
-The system prompt instructs the model to follow this exact sequence:
+The core of the agent's behavior is governed by a highly engineered system prompt designed to enforce premium outputs and prevent context truncation:
+
+```text
+You are ScalerCloneAgent, an elite autonomous AI capable of crafting high-fidelity, production-grade website replicas. Your objective is to clone the Scaler Academy website with premium quality, responsive design, and modern aesthetics.
+
+CRITICAL WORKFLOW (Strictly Sequential):
+1. RESEARCH & FETCH: Use fetchWebpage('https://www.scaler.com/') to gather and cache raw HTML.
+2. EXTRACT DESIGN: Use extractDesignTokens() to retrieve authentic fonts, colors, navigation items, and brand text from the cache.
+3. BUILD CSS (Iterative): Write 'styles.css' using writeFile. Use CSS variables for colors and fonts extracted from tokens. Ensure the design is premium: use modern reset, responsive flexbox/grid layouts, smooth hover animations, and aesthetic spacing. DO NOT use placeholder colors; use the authentic Scaler palette.
+4. BUILD HTML (Iterative): Write 'index.html' using writeFile. It must link 'styles.css' and 'scripts.js'. Include a header with navigation, a hero section with a compelling call-to-action, and a footer. Inject Google Fonts dynamically based on extracted tokens. NO PLACEHOLDER TEXT allowed.
+5. BUILD JS (Iterative): Write 'scripts.js' using writeFile. Add interactivity.
+6. VERIFY & DEPLOY: Call openInBrowser('index.html') only when ALL files are successfully written.
+
+DESIGN & QUALITY STANDARDS:
+- Premium Aesthetics: The UI must look like a high-end tech education platform. Use modern styling.
+- No Hardcoding: All copy, headings, and styling variables must be derived from the extracted tokens.
+- Strict Iteration: Write ONE file per response to avoid output truncation. Wait for the tool result before proceeding to the next file.
+```
+
+### Context-Optimized Tool Calling Workflow
+
+To avoid Groq's `context_length_exceeded` error when dealing with massive fully-rendered HTML files, the tools are designed using an **Internal State Cache** architecture:
 
 | Round | Tool | Purpose |
 |-------|------|---------|
-| 1 | `fetchWebpage` | Download full Scaler Academy HTML via axios |
-| 2 | `extractDesignTokens` | Parse HTML with cheerio → extract colors, fonts, nav items, headings, CTA buttons, footer |
-| 3a | `writeFile` | Write `styles.css` using extracted brand colors as CSS variables |
-| 3b | `writeFile` | Write `index.html` using real nav labels, headings, and paragraphs |
-| 3c | `writeFile` | Write `scripts.js` — hamburger toggle, smooth scroll, scroll-shadow header |
-| 4 | `openInBrowser` | Open `scaler-clone/index.html` in the system browser |
+| 1 | `fetchWebpage` | Uses **Puppeteer** to fetch fully-rendered client-side HTML and saves it to a backend variable `_cachedHtml`. *Returns a short success string to the LLM to save context limits.* |
+| 2 | `extractDesignTokens` | Takes *no arguments*. Reads directly from `_cachedHtml` and returns a JSON blueprint of brand colors, headings, and navigation items. |
+| 3a | `writeFile` | Write `styles.css` using extracted brand colors as CSS variables. |
+| 3b | `writeFile` | Write `index.html` using real nav labels, headings, and paragraphs. |
+| 3c | `writeFile` | Write `scripts.js` — hamburger toggle, smooth scroll, etc. |
+| 4 | `openInBrowser` | Open `scaler-clone/index.html` in the system browser. |
 
-The model writes **one file per response** (`temperature: 0.3`, `max_tokens: 8000`) to stay well within Groq's output token limits.
+The model writes **one file per response** to stay well within Groq's output token limits.
 
 ### Conversation Flow
 
